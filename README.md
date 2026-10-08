@@ -55,6 +55,8 @@ RAG-Chatbot/
 │   ├── retriever.py            # Models, index loading, similarity search
 │   ├── chains.py               # Prompt templates
 │   └── graph.py                # LangGraph: retrieve -> generate -> grade -> retry
+├── tests/
+│   └── test_retriever.py       # Tests for cleaning, chunking and retrieval
 ├── data/
 │   └── documents/              # Source PDF
 ├── vectorstore/
@@ -102,6 +104,14 @@ RAG-Chatbot/
    streamlit run APP\streamlit_app.py
    ```
 
+## Tests
+
+```powershell
+python -m pytest tests -q
+```
+
+Three tests run without any API key. The retrieval test uses the saved index and is skipped if the index or key is missing.
+
 ## Retrieval experiments
 
 Done in `rag_experiments.ipynb`:
@@ -135,4 +145,3 @@ A:
 - Conversation memory for follow-up questions
 - Upload your own PDFs from the UI
 - Streaming answers
-- Unit tests for retrieval
