@@ -4,6 +4,12 @@ A Retrieval-Augmented Generation (RAG) chatbot that answers questions about a PD
 
 Built with **LangChain**, **LangGraph**, **FAISS**, **Google Gemini** and **Streamlit**.
 
+## Screenshots
+
+![Answer with sources: what is RAG?](screenshot/llm_rag_chatbot-1.png)
+
+![Answer with sources: why do we need RAG?](screenshot/llm_rag_chatbot-2.png)
+
 ## Architecture
 
 ```
@@ -41,12 +47,20 @@ If the Gemini API is busy or the quota is finished, the app does not crash. It s
 ```
 RAG-Chatbot/
 ├── APP/
-│   └── streamlit_app.py        # Chat UI (LangGraph + saved index + fallback)
+│   └── streamlit_app.py        # Chat UI (answers, sources, fallback)
+├── src/
+│   ├── __init__.py
+│   ├── config.py               # Paths, model names, chunk sizes, API key
+│   ├── ingest.py               # Load PDF, clean, chunk, embed, build FAISS index
+│   ├── retriever.py            # Models, index loading, similarity search
+│   ├── chains.py               # Prompt templates
+│   └── graph.py                # LangGraph: retrieve -> generate -> grade -> retry
 ├── data/
 │   └── documents/              # Source PDF
 ├── vectorstore/
 │   └── faiss_index/            # Saved index (generated, not committed)
-├── rag_experiments.ipynb       # Ingestion, chunking and retrieval experiments
+├── screenshot/                 # Screenshots used in this README
+├── rag_experiments.ipynb       # Experiments: chunking and retrieval quality
 ├── .env.example                # Template for the API key
 ├── requirements.txt
 └── README.md
@@ -74,7 +88,13 @@ RAG-Chatbot/
 
 3. **Build the vector index (one time)**
 
-   Open `rag_experiments.ipynb`, select the `.venv` kernel and run cells 1 to 11 from top to bottom. Cell 7 creates `vectorstore/faiss_index`.
+   Run this from the project root:
+
+   ```powershell
+   python -m src.ingest
+   ```
+
+   It reads the PDF, removes the References section, splits the text into chunks, embeds them and saves the index to `vectorstore/faiss_index`.
 
 4. **Run the app**
 
@@ -84,27 +104,29 @@ RAG-Chatbot/
 
 ## Retrieval experiments
 
+Done in `rag_experiments.ipynb`:
+
 - The PDF text contained a long References section (links, DOI numbers). It was removed, which reduced the text from 17,944 to 11,122 characters.
 - `CharacterTextSplitter` (1000 characters) mixed unrelated headings in one chunk. `RecursiveCharacterTextSplitter` (800 characters, 150 overlap) was used instead, giving 17 clean chunks.
 - `k = 3` gave the most relevant context. Higher values added chunks that were only loosely related.
 
 ## Example Q&A
 
-_Replace these with your own screenshots and answers._
-
 **Q: What is RAG?**
-A: Retrieval-augmented generation is a technique that enables large language models to retrieve and incorporate new information from external data sources before generating responses.
+
+A: Retrieval-augmented generation (RAG) is a technique that enables large language models (LLMs) to retrieve and incorporate new information from external data sources (such as databases, uploaded documents, or web sources) before generating responses. It blends the LLM process with a document look-up or web search process to help the model stick to facts and use domain-specific or updated information.
 
 **Q: Why do we need RAG?**
-A: It reduces hallucinations, gives access to updated or domain-specific data, saves the cost of retraining, and lets the model cite sources.
 
-## Screenshots
-
-_Add screenshots of the chat UI here._
+A:
+- It helps LLMs stick to the facts and reduces hallucinations.
+- It lets models use domain-specific and updated information that was not in their training data.
+- It saves the computational and financial cost of frequently retraining models.
+- It allows models to cite sources, so users can verify the answers.
 
 ## Notes and limitations
 
-- The free Gemini tier has a small daily request limit. `USE_GRADING = False` in `streamlit_app.py` uses one LLM call per question instead of two.
+- The free Gemini tier has a small daily request limit. `USE_GRADING = False` in `APP/streamlit_app.py` uses one LLM call per question instead of two.
 - The chatbot answers only from the loaded document and says "I don't know" otherwise.
 - Each question is answered independently (no conversation memory yet).
 
