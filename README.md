@@ -139,6 +139,7 @@ A:
 - The free Gemini tier has a small daily request limit. `USE_GRADING = False` in `APP/streamlit_app.py` uses one LLM call per question instead of two.
 - The chatbot answers only from the loaded document and says "I don't know" otherwise.
 - Each question is answered independently (no conversation memory yet).
+- Headings in the source PDF can appear away from their sections after text extraction (checked with PyPDF2 and pypdf), so an answer may occasionally mix two sections.git add .
 
 ## Possible improvements
 
