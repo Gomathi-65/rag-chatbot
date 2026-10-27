@@ -8,9 +8,9 @@ Built with **LangChain**, **LangGraph**, **FAISS**, **Google Gemini** and **Stre
 
 ## Screenshots
 
-![Answer with sources: what is RAG?](screenshot/llm_rag_chatbot-1.png)
+![Answer with sources: what is RAG?](screenshot/rag.png)
 
-![Answer with sources: why do we need RAG?](screenshot/llm_rag_chatbot-2.png)
+![Answer with sources: what is machine learning?](screenshot/machine_learning.png)
 
 ## Architecture
 
