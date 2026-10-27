@@ -2,6 +2,8 @@
 
 A Retrieval-Augmented Generation (RAG) chatbot that answers questions about a PDF document. Instead of relying only on what the LLM already knows, it retrieves the most relevant chunks of the document and gives them to the LLM as context, so answers are grounded in the source.
 
+You can chat with the pre-indexed default document, or **upload your own PDF / TXT files** from the sidebar and ask questions about them.
+
 Built with **LangChain**, **LangGraph**, **FAISS**, **Google Gemini** and **Streamlit**.
 
 ## Screenshots
@@ -16,6 +18,9 @@ Built with **LangChain**, **LangGraph**, **FAISS**, **Google Gemini** and **Stre
 PDF -> extract text -> remove references -> split into chunks
     -> Gemini embeddings -> FAISS index (saved to disk)
 
+Uploaded files (sidebar) -> split into chunks -> Gemini embeddings (in batches)
+    -> FAISS index (kept in the browser session)
+
 Question -> retrieve top-k chunks -> generate answer -> grade -> answer
                   ^                                        |
                   |------ not grounded: retry (more chunks)
@@ -28,7 +33,7 @@ LangGraph state graph:
 3. **grade**: Gemini checks whether the answer is supported by the context (optional, can be switched off to save API quota).
 4. **decide**: if the answer is not grounded, go back to retrieve with more chunks (maximum 2 attempts).
 
-If the Gemini API is busy or the quota is finished, the app does not crash. It shows the most relevant passages from the document instead.
+If the Gemini API is busy or the quota is finished, the app does not crash. It shows the most relevant passages from the document instead, together with the real error message in an expandable "Error details" section.
 
 ## Tech stack
 
@@ -39,7 +44,7 @@ If the Gemini API is busy or the quota is finished, the app does not crash. It s
 | Embeddings | Google `gemini-embedding-001` |
 | Vector store | FAISS (local) |
 | Orchestration | LangChain + LangGraph |
-| PDF reading | PyPDF2 |
+| PDF reading | PyPDF2 (default document), PyPDFLoader / pypdf (uploads) |
 | Interface | Streamlit |
 
 ## Project structure
@@ -47,7 +52,7 @@ If the Gemini API is busy or the quota is finished, the app does not crash. It s
 ```
 RAG-Chatbot/
 ├── APP/
-│   └── streamlit_app.py        # Chat UI (answers, sources, fallback)
+│   └── streamlit_app.py        # Chat UI (document upload, answers, sources, fallback)
 ├── src/
 │   ├── __init__.py
 │   ├── config.py               # Paths, model names, chunk sizes, API key
@@ -104,6 +109,20 @@ RAG-Chatbot/
    streamlit run APP\streamlit_app.py
    ```
 
+## Uploading your own documents
+
+1. In the sidebar, choose one or more **PDF or TXT** files.
+2. Click **Index documents** and wait for the success message.
+3. Ask questions in the chat. The caption above the chat shows which document is being used.
+4. Click **Use default document** to go back to the pre-indexed PDF, or **Clear chat** to start a new conversation.
+
+How it works:
+
+- Uploaded files use the same embedding model as the default index, so the same retrieval and answer pipeline is reused.
+- The Gemini free tier allows roughly 100 embedding requests per minute (one request per chunk). Uploads are therefore embedded in batches of 80 chunks, with a short wait and automatic retry between batches. A progress bar shows the status, and large files can take a few minutes.
+- The uploaded index lives only in the current browser session. Refreshing the page removes it.
+- Scanned PDFs (images without text) cannot be read and would need OCR first.
+
 ## Tests
 
 ```powershell
@@ -136,13 +155,15 @@ A:
 
 ## Notes and limitations
 
-- The free Gemini tier has a small daily request limit. `USE_GRADING = False` in `APP/streamlit_app.py` uses one LLM call per question instead of two.
+- The free Gemini tier has small request limits (per minute for embeddings, per day for the LLM). `USE_GRADING = False` in `APP/streamlit_app.py` uses one LLM call per question instead of two.
 - The chatbot answers only from the loaded document and says "I don't know" otherwise.
 - Each question is answered independently (no conversation memory yet).
-- Headings in the source PDF can appear away from their sections after text extraction (checked with PyPDF2 and pypdf), so an answer may occasionally mix two sections.git add .
+- Uploaded documents are not saved between sessions.
+- Headings in the source PDF can appear away from their sections after text extraction (checked with PyPDF2 and pypdf), so an answer may occasionally mix two sections.
 
 ## Possible improvements
 
 - Conversation memory for follow-up questions
-- Upload your own PDFs from the UI
-- Streaming answers
+- Save uploaded indexes to disk so they survive a page refresh
+- Show page numbers in the sources
+- Streaming answer
